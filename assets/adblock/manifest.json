@@ -1,0 +1,72 @@
+[
+  {
+    "path": "BRAVE-ADBLOCK-RESOURCES-LICENSE.txt",
+    "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+    "bytes": 16725
+  },
+  {
+    "path": "lists/01-ublock-filters.txt",
+    "sha256": "557aec91647e1cdc8b4688239d65d3c69f4ce89823af43c7c246d01b126bf87b",
+    "bytes": 1903712
+  },
+  {
+    "path": "lists/02-ublock-privacy.txt",
+    "sha256": "2979227f240ca0b33d267581a611d04192a60fe321d4903acd134171eecf0252",
+    "bytes": 139517
+  },
+  {
+    "path": "lists/03-ublock-quick-fixes.txt",
+    "sha256": "bc28308c7d6d6e1d5886aa311a4b36815f904ae771d973f54a5222fc2dc7e330",
+    "bytes": 73893
+  },
+  {
+    "path": "lists/04-ublock-unbreak.txt",
+    "sha256": "75e3d2da5d91c77b5d1da5c4edbfb80f6a4ecf12ab587bb8788bc46f4f206fc3",
+    "bytes": 177516
+  },
+  {
+    "path": "lists/05-easylist.txt",
+    "sha256": "d84dbe02d67e3c82618561120cbd4059c650cf60bf963b401c9ac9489d255c3f",
+    "bytes": 2217071
+  },
+  {
+    "path": "lists/06-easyprivacy.txt",
+    "sha256": "18b1a9ad8f4c4b2034d73322a8fd618ce9bab17db38693f140500d5932cd2ec0",
+    "bytes": 1495111
+  },
+  {
+    "path": "lists/07-ubol-filters.txt",
+    "sha256": "d4ddb2013ed6023427ecbf7ad89fd6cdff614c1bbc8382747e84cc69807bc96a",
+    "bytes": 34272
+  },
+  {
+    "path": "resources.json",
+    "sha256": "d085eb0754b7a54d9e1a18a0314b1946b066f61a15457de834d98beb53b4e40f",
+    "bytes": 596542
+  },
+  {
+    "path": "scriptlets/youtube-isolated.js",
+    "sha256": "fe1503950cc7a63319b3c55f47c653d97e0284744db8f1eb693afbdc6bded3cf",
+    "bytes": 455328
+  },
+  {
+    "path": "scriptlets/youtube-main.js",
+    "sha256": "b9bc275c484e7e2b39b5a71b82416c6d31b785b3bf4440c3874d56470c5f1dd8",
+    "bytes": 656600
+  },
+  {
+    "path": "SOURCES.md",
+    "sha256": "23b357b9252a8f7ea6caa41c6c5fb273ff9f251967a5327d1b269932b9f83d24",
+    "bytes": 988
+  },
+  {
+    "path": "UASSETS-LICENSE.txt",
+    "sha256": "589ed823e9a84c56feb95ac58e7cf384626b9cbf4fda2a907bc36e103de1bad2",
+    "bytes": 35141
+  },
+  {
+    "path": "UBLOCK-LICENSE.txt",
+    "sha256": "e73d33841f942fa73aa5a63d4a6399cc39a29564db1dbca0915485842fcb236d",
+    "bytes": 35126
+  }
+]

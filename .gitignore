@@ -1,0 +1,25 @@
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+
+# Native and PyInstaller build output
+build/
+dist/
+runtime-macos/
+rust/zyvro-adblock/target/
+
+# Platform-generated packaging resources
+packaging/Zyvro.icns
+packaging/Zyvro-dmg-background.png
+
+# Native ad-block binaries are rebuilt from the checked-in Rust source.
+runtime/adblock/*.dll
+runtime/adblock/*.dylib
+runtime/adblock/*.so
+
+# Editor and operating-system noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

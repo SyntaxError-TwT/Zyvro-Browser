@@ -1,0 +1,8 @@
+This Zyvro bridge is licensed under the Mozilla Public License 2.0.
+
+It links the `adblock` crate from Brave Software, also licensed under MPL-2.0:
+https://github.com/brave/adblock-rust
+
+The full MPL-2.0 text is available at:
+https://www.mozilla.org/MPL/2.0/
+

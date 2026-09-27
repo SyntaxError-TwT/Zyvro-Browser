@@ -1,0 +1,39 @@
+name: Build Zyvro macOS DMG
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Create project environment
+        run: python3 -m venv .venv
+
+      - name: Install DMG layout tool
+        run: brew install create-dmg
+
+      - name: Build unsigned test DMG
+        run: bash build-macos.sh
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zyvro-macOS-DMG
+          path: dist/*.dmg
+          if-no-files-found: error
+          retention-days: 14

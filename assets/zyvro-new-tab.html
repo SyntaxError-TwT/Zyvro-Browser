@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Tab</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      min-height: 100vh; color: #f6f7ff;
+      background: #071333 url("zyvro-background.png") center / cover fixed no-repeat;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none;
+      background: linear-gradient(180deg, rgba(2, 8, 30, .27), rgba(4, 7, 23, .57));
+    }
+    main {
+      position: relative; z-index: 1; width: min(920px, calc(100% - 48px));
+      margin: 0 auto; padding: 102px 0 50px;
+    }
+    h1 {
+      margin: 0 0 25px; text-align: center; font-size: clamp(38px, 5vw, 62px);
+      line-height: 1; letter-spacing: -.045em; font-weight: 720;
+      text-shadow: 0 4px 30px rgba(25, 73, 190, .55);
+    }
+    .search {
+      width: min(690px, 100%); height: 58px; margin: 0 auto 58px;
+      display: flex; align-items: center; gap: 12px; padding: 0 20px;
+      border: 1px solid rgba(206, 219, 255, .42); border-radius: 18px;
+      background: rgba(9, 18, 48, .68); backdrop-filter: blur(22px);
+      box-shadow: 0 14px 45px rgba(0, 0, 20, .3), inset 0 1px rgba(255,255,255,.08);
+    }
+    .search:focus-within {
+      border-color: rgba(99, 190, 255, .95);
+      box-shadow: 0 0 0 3px rgba(50, 139, 255, .18), 0 16px 48px rgba(0,0,20,.34);
+    }
+    .search svg { width: 21px; height: 21px; flex: none; color: #c9d7ff; }
+    .search input {
+      flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+      color: white; font: inherit; font-size: 17px;
+    }
+    .search input::placeholder { color: #b9c2dc; }
+    section { margin-top: 31px; }
+    h2 {
+      margin: 0 0 13px 3px; font-size: 16px; font-weight: 650;
+      letter-spacing: .01em; text-shadow: 0 2px 12px rgba(0,0,0,.65);
+    }
+    .cards {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+    }
+    .card {
+      min-height: 94px; padding: 15px; display: flex; align-items: center; gap: 12px;
+      color: white; text-decoration: none; border-radius: 16px;
+      border: 1px solid rgba(205, 218, 255, .25);
+      background: rgba(10, 18, 45, .68); backdrop-filter: blur(18px);
+      box-shadow: 0 10px 30px rgba(0, 0, 22, .19);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px); background: rgba(21, 34, 75, .82);
+      border-color: rgba(116, 188, 255, .68);
+    }
+    .site-icon {
+      width: 40px; height: 40px; flex: none; display: grid; place-items: center;
+      border-radius: 12px; background: rgba(255,255,255,.94);
+      box-shadow: 0 6px 19px rgba(18, 28, 70, .35); overflow: hidden;
+    }
+    .site-icon img { width: 26px; height: 26px; object-fit: contain; }
+    .site-icon svg { width: 23px; height: 23px; color: #53627f; }
+    .copy { min-width: 0; }
+    .title, .host { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .title { font-size: 14px; font-weight: 640; }
+    .host { margin-top: 4px; color: #bac4df; font-size: 11px; }
+    .empty {
+      margin: 0; padding: 19px; border: 1px solid rgba(205,218,255,.22);
+      border-radius: 16px; color: #c6cee3; background: rgba(10,18,45,.61);
+      backdrop-filter: blur(18px);
+    }
+    @media (max-width: 720px) {
+      main { padding-top: 108px; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Zyvro Browser</h1>
+    <form class="search" action="https://www.google.com/search" method="get">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>
+      </svg>
+      <input name="q" type="search" placeholder="Search Google" autocomplete="off" autofocus>
+    </form>
+    <section>
+      <h2>Recent</h2>
+      <div id="recent" class="cards"></div>
+    </section>
+    <section>
+      <h2>Suggested</h2>
+      <div id="suggested" class="cards"></div>
+    </section>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const decode = key => {
+      try { return JSON.parse(atob(params.get(key) || "W10=")); }
+      catch (_) { return []; }
+    };
+    const render = (id, entries, emptyText) => {
+      const container = document.getElementById(id);
+      if (!entries.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty"; empty.textContent = emptyText;
+        container.replaceWith(empty); return;
+      }
+      entries.forEach(item => {
+        const link = document.createElement("a"); link.className = "card"; link.href = item.url;
+        const icon = document.createElement("span"); icon.className = "site-icon";
+        const fallback = () => {
+          icon.replaceChildren();
+          icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>';
+        };
+        if (item.icon) {
+          const image = document.createElement("img"); image.src = item.icon;
+          image.alt = ""; image.addEventListener("error", fallback); icon.append(image);
+        } else { fallback(); }
+        const copy = document.createElement("span"); copy.className = "copy";
+        const title = document.createElement("span"); title.className = "title";
+        title.textContent = item.title || item.host;
+        const host = document.createElement("span"); host.className = "host"; host.textContent = item.host;
+        copy.append(title, host); link.append(icon, copy); container.append(link);
+      });
+    };
+    render("recent", decode("recent"), params.get("private") === "1"
+      ? "Recent activity is hidden in Private mode." : "Sites you visit will appear here.");
+    render("suggested", decode("suggested"), "Suggested sites will appear here.");
+  </script>
+</body>
+</html>
