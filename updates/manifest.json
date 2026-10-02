@@ -1,7 +1,7 @@
 {
-  "version": "0.4.1",
+  "version": "1.0.0",
   "download_url": "https://github.com/SyntaxError-TwT/Zyvro-Browser/releases/download/Models/ZyvroSetup.exe",
-  "notes": "YouTube fullscreen works again. Windows search stability is improved. Signed update checks run every two days.",
-  "sha256": "e5f99d3c4dc77fcab99d09787730f4f9507e5b753bb13d3cdcdebf0cecbfe98f",
-  "signature": "Hc9dcGN4lyM/kQIdUXAmSE9ARbUJpX4hlmiGSvIA96D3ADdSjrLecaqjtWcmmmS4Xsn91u0S+eLJSgMlGZ+zDQ=="
+  "notes": "Zyvro Browser v1.0.0 Stable: refreshed Windows installer and portable package, improved signed update delivery.",
+  "sha256": "2f97ba192e73e8d98656793918a38d29f9b12fcc1d7439a62aa6ce507b5c2c37",
+  "signature": "xlXQkk9Jex8SkbfmnK1VuIDh6klUknfUXSe4BtS8igEl00LpWg47azrIs0j1Zk1NO5u7qvmO0GaxUuphiJxGAA=="
 }
