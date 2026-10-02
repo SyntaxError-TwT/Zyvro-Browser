@@ -1,0 +1,63 @@
+name: Publish signed update manifest
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the v prefix
+        required: true
+      tag:
+        description: GitHub release tag containing ZyvroSetup.exe
+        required: true
+      notes:
+        description: Short update notes shown in Zyvro
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install signing dependency
+        run: python -m pip install 'cryptography>=43,<47'
+
+      - name: Download Windows installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: gh release download "$RELEASE_TAG" --pattern ZyvroSetup.exe
+
+      - name: Create signed manifest
+        env:
+          ZYVRO_UPDATE_PRIVATE_KEY: ${{ secrets.ZYVRO_UPDATE_PRIVATE_KEY }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_NOTES: ${{ inputs.notes }}
+        run: |
+          python packaging/sign_update_manifest.py ZyvroSetup.exe \
+            --version "$RELEASE_VERSION" \
+            --download-url "https://github.com/${{ github.repository }}/releases/download/$RELEASE_TAG/ZyvroSetup.exe" \
+            --notes "$RELEASE_NOTES" \
+            --output updates/manifest.json
+
+      - name: Commit manifest
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add updates/manifest.json
+          if git diff --cached --quiet; then
+            echo "Manifest is already current."
+          else
+            git commit -m "Publish signed update manifest for v${{ inputs.version }}"
+            git push
+          fi
