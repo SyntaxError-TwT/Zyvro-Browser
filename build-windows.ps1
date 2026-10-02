@@ -9,7 +9,7 @@ $Root = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $Python = Join-Path $Root '.venv\Scripts\python.exe'
 $Dist = Join-Path $Root 'dist'
 $Build = Join-Path $Root 'build\Zyvro'
-$AppOutput = Join-Path $Dist 'Zyvro.exe'
+$AppOutput = Join-Path $Dist 'Zyvro\Zyvro.exe'
 $InstallerOutput = Join-Path $Dist 'ZyvroSetup.exe'
 $Cargo = Join-Path $env:USERPROFILE '.cargo\bin\cargo.exe'
 $RustManifest = Join-Path $Root 'rust\zyvro-adblock\Cargo.toml'
@@ -94,9 +94,10 @@ $env:PATH = @(
 if (Test-Path -LiteralPath $Build) {
     Remove-Item -LiteralPath $Build -Recurse -Force
 }
-foreach ($artifact in @($AppOutput, $InstallerOutput)) {
+foreach ($artifact in @((Join-Path $Dist 'Zyvro'), $InstallerOutput)) {
     if (Test-Path -LiteralPath $artifact) {
-        Remove-Item -LiteralPath $artifact -Force
+        $item = Get-Item -LiteralPath $artifact
+        Remove-Item -LiteralPath $artifact -Force -Recurse:$item.PSIsContainer
     }
 }
 New-Item -ItemType Directory -Path $Dist -Force | Out-Null
@@ -105,7 +106,7 @@ Push-Location $Root
 try {
     & $Python -m PyInstaller --noconfirm --clean (Join-Path $Root 'Zyvro.spec')
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $AppOutput)) {
-        throw 'PyInstaller did not produce dist\Zyvro.exe.'
+        throw 'PyInstaller did not produce dist\Zyvro\Zyvro.exe.'
     }
 
     if (-not $SkipInstaller) {
@@ -132,7 +133,7 @@ Write-Host ''
 Write-Host 'Build complete.'
 Write-Host ''
 Write-Host 'Application:'
-Write-Host 'dist/Zyvro.exe'
+Write-Host 'dist/Zyvro/Zyvro.exe'
 if (-not $SkipInstaller) {
     Write-Host ''
     Write-Host 'Installer:'

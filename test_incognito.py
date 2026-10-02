@@ -123,6 +123,81 @@ class IncognitoIntegrationTests(unittest.TestCase):
         self.windows.append(window)
         return window
 
+    def test_webengine_fullscreen_requests_are_enabled_and_restored(self) -> None:
+        window = self._window(False)
+        browser = window.current_browser()
+        self.assertTrue(
+            browser.settings().testAttribute(
+                QWebEngineSettings.WebAttribute.FullScreenSupportEnabled
+            )
+        )
+
+        class Request:
+            def __init__(self, enabled: bool) -> None:
+                self.enabled = enabled
+                self.accepted = False
+                self.rejected = False
+
+            def toggleOn(self) -> bool:
+                return self.enabled
+
+            def accept(self) -> None:
+                self.accepted = True
+
+            def reject(self) -> None:
+                self.rejected = True
+
+        enter = Request(True)
+        window._full_screen_requested(browser, enter)
+        self.assertTrue(enter.accepted)
+        self.assertFalse(enter.rejected)
+        self.assertIs(window._fullscreen_browser, browser)
+        self.assertFalse(window.tabs.tabBar().isVisible())
+
+        leave = Request(False)
+        window._full_screen_requested(browser, leave)
+        self.assertTrue(leave.accepted)
+        self.assertIsNone(window._fullscreen_browser)
+
+    def test_automatic_update_check_obeys_two_day_interval(self) -> None:
+        window = self._window(False)
+        previous = {
+            key: window.settings_manager.value(key)
+            for key in (
+                "updates/automatic_check_enabled",
+                "updates/manifest_url",
+                "updates/ed25519_public_key",
+                "updates/last_check_epoch",
+            )
+        }
+        window.settings_manager.save_values(
+            {
+                "updates/automatic_check_enabled": True,
+                "updates/manifest_url": "https://updates.example.test/manifest.json",
+                "updates/ed25519_public_key": "test-key",
+                "updates/last_check_epoch": int(__import__("time").time()),
+            }
+        )
+        calls: list[tuple[str, str]] = []
+        original = __import__("scratch_browser").UpdateChecker.check
+
+        def checked(_checker, manifest: str, key: str) -> dict:
+            calls.append((manifest, key))
+            return {"available": False, "version": "0.4.0"}
+
+        __import__("scratch_browser").UpdateChecker.check = checked
+        try:
+            window._maybe_check_for_updates()
+            self._wait(50)
+            self.assertEqual(calls, [])
+            window.settings_manager.set_value("updates/last_check_epoch", 0)
+            window._maybe_check_for_updates()
+            self._wait(250)
+            self.assertEqual(len(calls), 1)
+        finally:
+            __import__("scratch_browser").UpdateChecker.check = original
+            window.settings_manager.save_values(previous)
+
     @staticmethod
     def _proxy_server(protocol: str):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

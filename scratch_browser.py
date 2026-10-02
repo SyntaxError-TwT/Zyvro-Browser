@@ -12,6 +12,7 @@ from pathlib import Path
 import secrets
 import subprocess
 import sys
+import threading
 import time
 
 def _ensure_project_python() -> None:
@@ -131,7 +132,7 @@ from browser_dialogs import (
     SettingsDialog,
 )
 from browser_menu import BrowserMenu
-from browser_maintenance import APP_VERSION
+from browser_maintenance import APP_VERSION, UpdateChecker
 from browser_tools_dialogs import (
     BackupDialog,
     TabOverviewDialog,
@@ -411,6 +412,7 @@ class BrowserView(QWebEngineView):
     malicious_navigation_requested = Signal(QUrl)
     https_upgrade_requested = Signal(QUrl, QUrl)
     renderer_terminated = Signal(object, int)
+    full_screen_requested = Signal(object)
 
     def __init__(
         self,
@@ -431,6 +433,12 @@ class BrowserView(QWebEngineView):
         # falling back to its default profile when a private tab or popup opens.
         page = BrowserWebPage(profile, self)
         self.setPage(page)
+        # Chromium only exposes the HTML Fullscreen API when this attribute is
+        # enabled and the application accepts each fullScreenRequested event.
+        # Without both pieces YouTube reports that fullscreen is unavailable.
+        self.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True
+        )
         page.media_capture_changed.connect(self._media_capture_changed)
         page.cosmetic_ads_hidden.connect(self.cosmetic_ads_hidden.emit)
         page.permissionRequested.connect(self.permission_requested.emit)
@@ -449,6 +457,7 @@ class BrowserView(QWebEngineView):
         )
         page.https_upgrade_requested.connect(self.https_upgrade_requested.emit)
         page.renderProcessTerminated.connect(self.renderer_terminated.emit)
+        page.fullScreenRequested.connect(self.full_screen_requested.emit)
         self.loadStarted.connect(self._reset_media_state)
         self.loadStarted.connect(self._reset_adblock_count)
         self.loadFinished.connect(self._apply_adblock_cosmetics)
@@ -1774,6 +1783,8 @@ class BrowserWindow(QMainWindow):
     _open_windows: set["BrowserWindow"] = set()
     _closing_all = False
     _nuking_data = False
+    _automatic_update_started = False
+    automatic_update_finished = Signal(object, str)
 
     def __init__(
         self,
@@ -1845,6 +1856,11 @@ class BrowserWindow(QMainWindow):
         self._permission_popup: SitePermissionPopup | None = None
         self._active_printers: list[QPrinter] = []
         self._tool_dialogs: list[QDialog] = []
+        self._fullscreen_browser: BrowserView | None = None
+        self._fullscreen_geometry = None
+        self._fullscreen_was_maximized = False
+        self._fullscreen_navigation_visible = True
+        self._fullscreen_bookmarks_visible = False
         BrowserWindow._open_windows.add(self)
 
         self.setWindowTitle(self._window_title(str(self.web_app.get("name") or "New Tab")))
@@ -1922,6 +1938,22 @@ class BrowserWindow(QMainWindow):
             self._apply_web_app_mode()
         self.apply_theme()
         self._schedule_session_save()
+        self.automatic_update_finished.connect(
+            self._automatic_update_check_finished
+        )
+        if (
+            not self.incognito
+            and not self.web_app_mode
+            and not BrowserWindow._automatic_update_started
+        ):
+            BrowserWindow._automatic_update_started = True
+            self._automatic_update_timer = QTimer(self)
+            self._automatic_update_timer.setInterval(60 * 60 * 1000)
+            self._automatic_update_timer.timeout.connect(
+                self._maybe_check_for_updates
+            )
+            self._automatic_update_timer.start()
+            QTimer.singleShot(3_000, self._maybe_check_for_updates)
 
     def _create_toolbar(self) -> None:
         toolbar = QToolBar("Navigation")
@@ -2583,6 +2615,10 @@ class BrowserWindow(QMainWindow):
             lambda status, code, view=browser:
             self._renderer_terminated(view, status, code)
         )
+        browser.full_screen_requested.connect(
+            lambda request, view=browser:
+            self._full_screen_requested(view, request)
+        )
         browser.loadFinished.connect(
             lambda success, view=browser: self._https_upgrade_finished(view, success)
         )
@@ -2703,6 +2739,8 @@ class BrowserWindow(QMainWindow):
             return
         widget = self.tabs.widget(index)
         if isinstance(widget, BrowserPage):
+            if widget.browser is self._fullscreen_browser:
+                self._leave_full_screen()
             if self.session_managed:
                 self.session_manager.remember_closed(self._tab_state(widget))
             widget.close_devtools()
@@ -3121,6 +3159,53 @@ class BrowserWindow(QMainWindow):
             back_callback=close_tab,
         )
         page.security_interstitial.back.setText("Close Tab")
+
+    def _full_screen_requested(self, browser: BrowserView, request) -> None:
+        """Honor Chromium's HTML fullscreen request for the requesting tab."""
+        try:
+            toggle_on = bool(request.toggleOn())
+        except (AttributeError, RuntimeError):
+            request.reject()
+            return
+
+        if toggle_on:
+            index = self._index_of_browser(browser)
+            if index < 0:
+                request.reject()
+                return
+            if self._fullscreen_browser is not None:
+                self._leave_full_screen()
+            self.tabs.setCurrentIndex(index)
+            self._fullscreen_browser = browser
+            self._fullscreen_geometry = self.saveGeometry()
+            self._fullscreen_was_maximized = self.isMaximized()
+            self._fullscreen_navigation_visible = self.navigation_bar.isVisible()
+            self._fullscreen_bookmarks_visible = self.bookmarks_bar.isVisible()
+            self.tabs.tabBar().hide()
+            self.navigation_bar.hide()
+            self.bookmarks_bar.hide()
+            request.accept()
+            self.showFullScreen()
+            browser.setFocus()
+            return
+
+        request.accept()
+        self._leave_full_screen()
+
+    def _leave_full_screen(self) -> None:
+        if self._fullscreen_browser is None and not self.isFullScreen():
+            return
+        self._fullscreen_browser = None
+        self.tabs.tabBar().show()
+        self.navigation_bar.setVisible(self._fullscreen_navigation_visible)
+        self.bookmarks_bar.setVisible(self._fullscreen_bookmarks_visible)
+        if self._fullscreen_was_maximized:
+            self.showMaximized()
+        else:
+            self.showNormal()
+            if self._fullscreen_geometry is not None:
+                self.restoreGeometry(self._fullscreen_geometry)
+        self._fullscreen_geometry = None
 
     def _desktop_media_requested(self, browser: BrowserView, request) -> None:
         site = browser.url().host().lower().strip(".")
@@ -3918,6 +4003,81 @@ class BrowserWindow(QMainWindow):
     def open_update_checker(self) -> None:
         UpdateDialog(self).exec()
 
+    def _maybe_check_for_updates(self) -> None:
+        """Check the signed update channel at most once every two days."""
+        if not bool(self.settings_manager.value("updates/automatic_check_enabled")):
+            return
+        manifest = str(
+            self.settings_manager.value("updates/manifest_url") or ""
+        ).strip()
+        public_key = str(
+            self.settings_manager.value("updates/ed25519_public_key") or ""
+        ).strip()
+        if not manifest or not public_key:
+            return
+        now = time.time()
+        try:
+            last_check = float(
+                self.settings_manager.value("updates/last_check_epoch") or 0
+            )
+        except (TypeError, ValueError):
+            last_check = 0
+        interval = 2 * 24 * 60 * 60
+        if now - last_check < interval:
+            return
+        # Record the attempt before starting so an unavailable network does not
+        # cause every new window to retry and stall the update host.
+        self.settings_manager.set_value("updates/last_check_epoch", int(now))
+        self.settings_manager.sync()
+
+        def worker() -> None:
+            result = None
+            error = ""
+            try:
+                result = UpdateChecker().check(manifest, public_key)
+            except (ValueError, RuntimeError) as caught:
+                error = str(caught)
+            try:
+                self.automatic_update_finished.emit(result, error)
+            except RuntimeError:
+                pass
+
+        threading.Thread(
+            target=worker, name="ZyvroUpdateCheck", daemon=True
+        ).start()
+
+    def _automatic_update_check_finished(
+        self, result: object, error: str
+    ) -> None:
+        if error:
+            self.settings_manager.set_value("updates/last_error", error)
+            self.settings_manager.sync()
+            return
+        if not isinstance(result, dict) or not result.get("available"):
+            return
+        version = str(result.get("version") or "")
+        if version == str(
+            self.settings_manager.value("updates/last_notified_version") or ""
+        ):
+            return
+        self.settings_manager.set_value("updates/last_notified_version", version)
+        self.settings_manager.sync()
+        message = QMessageBox(self)
+        message.setWindowTitle("Zyvro Update Available")
+        message.setIcon(QMessageBox.Icon.Information)
+        message.setText(f"Zyvro {version} is available.")
+        notes = str(result.get("notes") or "").strip()
+        message.setInformativeText(
+            notes or "Open the update checker to download and verify it."
+        )
+        view = message.addButton(
+            "View Update", QMessageBox.ButtonRole.AcceptRole
+        )
+        message.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        message.exec()
+        if message.clickedButton() is view:
+            self.open_update_checker()
+
     def toggle_reader_mode(self) -> None:
         page = self.tabs.currentWidget()
         if not isinstance(page, BrowserPage):
@@ -4216,6 +4376,8 @@ h1,h2,h3{{line-height:1.25}} img{{max-width:100%;height:auto}} a{{color:#356bb3}
             )
 
     def closeEvent(self, event) -> None:
+        if self._fullscreen_browser is not None:
+            self._leave_full_screen()
         active_downloads = self.download_manager.active_requests()
         if active_downloads:
             answer = QMessageBox.question(

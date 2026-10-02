@@ -9,7 +9,7 @@ the filter lists, browser artwork, and all ordinary Python dependencies.
 Running the Mac build produces an architecture-specific disk image:
 
 ```text
-dist/Zyvro-0.4.0-macOS-arm64.dmg
+dist/Zyvro-0.4.1-macOS-arm64.dmg
 ```
 
 On an Intel Mac, the suffix is `x86_64`. The disk image contains `Zyvro.app`

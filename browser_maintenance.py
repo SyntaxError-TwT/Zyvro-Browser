@@ -20,7 +20,7 @@ from antivirus_detector import AntivirusDetector
 from browser_data import APP_NAME, ORGANIZATION_NAME, app_data_directory
 
 
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.4.1"
 BACKUP_FORMAT = "python-browser-backup-v1"
 
 

@@ -64,7 +64,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Name: "startmenuicon"; Description: "Add Zyvro to the Start Menu"; GroupDescription: "Installation Options:"; Flags: checkedonce
 
 [Files]
-Source: "..\dist\Zyvro.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\Zyvro\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autodesktop}\Zyvro"; Filename: "{app}\Zyvro.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Zyvro.exe"; Comment: "Browse with Zyvro"; Tasks: desktopicon

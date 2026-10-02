@@ -87,12 +87,22 @@ class SettingsManager(QObject):
         "developer/devtools_behavior": "dock_right",
         "performance/sleeping_tabs_enabled": True,
         "performance/sleeping_tabs_minutes": 15,
-        "updates/manifest_url": "",
+        "updates/manifest_url": (
+            "https://raw.githubusercontent.com/lucaswang9/"
+            "Zyvro-Updates/main/manifest.json"
+        ),
+        "updates/automatic_check_enabled": True,
+        "updates/last_check_epoch": 0,
+        "updates/last_notified_version": "",
+        "updates/last_error": "",
+        "updates/default_channel_migrated": False,
         "security/virustotal_tier": "public",
         "security/manual_download_decisions": True,
         "security/https_only_enabled": False,
         "security/malicious_site_protection": True,
-        "updates/ed25519_public_key": "",
+        "updates/ed25519_public_key": (
+            "huv5gOQoUMj1bOlpIj54R2UlbcakheksLlYDEsL96no="
+        ),
     }
 
     SEARCH_TEMPLATES = {
@@ -114,6 +124,23 @@ class SettingsManager(QObject):
             self._settings.setValue("general/startup", "new_tab")
             self._settings.setValue("branding/zyvro_startup_migrated", True)
             self._settings.sync()
+        update_migrated = self._settings.value(
+            "updates/default_channel_migrated", False
+        )
+        if str(update_migrated).lower() not in {"1", "true", "yes", "on"}:
+            if not str(self._settings.value("updates/manifest_url", "")).strip():
+                self._settings.setValue(
+                    "updates/manifest_url", self.DEFAULTS["updates/manifest_url"]
+                )
+            if not str(
+                self._settings.value("updates/ed25519_public_key", "")
+            ).strip():
+                self._settings.setValue(
+                    "updates/ed25519_public_key",
+                    self.DEFAULTS["updates/ed25519_public_key"],
+                )
+            self._settings.setValue("updates/default_channel_migrated", True)
+            self._settings.sync()
 
     def value(self, key: str):
         default = self.DEFAULTS.get(key)
@@ -123,7 +150,7 @@ class SettingsManager(QObject):
                 return value.lower() in {"1", "true", "yes", "on"}
             return bool(value)
         if isinstance(default, int):
-            return int(value)
+            return int(float(value))
         return value
 
     def set_value(self, key: str, value) -> None:

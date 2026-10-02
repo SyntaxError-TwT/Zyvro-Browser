@@ -8,11 +8,16 @@ The complete build creates:
 
 ```text
 dist/
-    Zyvro.exe
+    Zyvro/
+        Zyvro.exe
+        _internal/
     ZyvroSetup.exe
 ```
 
-`Zyvro.exe` is a one-file, windowed x64 build that can run without Setup. `ZyvroSetup.exe` is a per-user Inno Setup installer for Windows 10 and 11.
+`dist/Zyvro/Zyvro.exe` is a windowed x64 folder build that can run without
+Setup. Keeping Qt WebEngine and Chromium helpers at stable paths avoids the
+temporary `_MEI` extraction crashes associated with one-file browser builds.
+`ZyvroSetup.exe` is a per-user Inno Setup installer for Windows 10 and 11.
 
 ## Requirements
 
@@ -95,7 +100,7 @@ Use Zyvro's explicit **Nuke Data** command only when the user wants browser-owne
 
 ## Manual installer build
 
-After `dist/Zyvro.exe` exists, compile:
+After `dist/Zyvro/Zyvro.exe` exists, compile:
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" .\installer\Zyvro.iss

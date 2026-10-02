@@ -1380,8 +1380,13 @@ class SettingsDialog(_ThemedDialog):
             str(self.settings.value("updates/manifest_url") or "")
         )
         self.update_manifest.setPlaceholderText("https://example.com/browser-update.json")
+        self.automatic_updates = QCheckBox("Check automatically every two days")
+        self.automatic_updates.setChecked(
+            bool(self.settings.value("updates/automatic_check_enabled"))
+        )
         manifest_note = QLabel(
-            "Optional HTTPS JSON source used only when you click Check for Updates. "
+            "Signed HTTPS JSON source used for manual checks and, when enabled, "
+            "one background check every two days. "
             "The browser never installs or restarts automatically."
         )
         manifest_note.setWordWrap(True)
@@ -1391,6 +1396,7 @@ class SettingsDialog(_ThemedDialog):
         )
         self.update_public_key.setPlaceholderText("Base64 Ed25519 public key")
         form.addRow("Update signing key", self.update_public_key)
+        form.addRow("Automatic checks", self.automatic_updates)
         form.addRow("", manifest_note)
         return page
 
@@ -1497,6 +1503,7 @@ class SettingsDialog(_ThemedDialog):
                 "performance/sleeping_tabs_minutes": self.sleeping_minutes.value(),
                 "updates/manifest_url": self.update_manifest.text().strip(),
                 "updates/ed25519_public_key": self.update_public_key.text().strip(),
+                "updates/automatic_check_enabled": self.automatic_updates.isChecked(),
                 "security/https_only_enabled": self.https_only.isChecked(),
                 "security/malicious_site_protection": self.malicious_site_protection.isChecked(),
             }
