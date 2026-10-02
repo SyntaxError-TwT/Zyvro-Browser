@@ -88,8 +88,8 @@ class SettingsManager(QObject):
         "performance/sleeping_tabs_enabled": True,
         "performance/sleeping_tabs_minutes": 15,
         "updates/manifest_url": (
-            "https://raw.githubusercontent.com/lucaswang9/"
-            "Zyvro-Updates/main/manifest.json"
+            "https://raw.githubusercontent.com/SyntaxError-TwT/"
+            "Zyvro-Browser/main/updates/manifest.json"
         ),
         "updates/automatic_check_enabled": True,
         "updates/last_check_epoch": 0,
@@ -101,7 +101,7 @@ class SettingsManager(QObject):
         "security/https_only_enabled": False,
         "security/malicious_site_protection": True,
         "updates/ed25519_public_key": (
-            "huv5gOQoUMj1bOlpIj54R2UlbcakheksLlYDEsL96no="
+            "j7XaxzbjPhLzfMIWipNdrOEqjflWEvPS+E3x4qLJtNQ="
         ),
     }
 
@@ -140,6 +140,36 @@ class SettingsManager(QObject):
                     self.DEFAULTS["updates/ed25519_public_key"],
                 )
             self._settings.setValue("updates/default_channel_migrated", True)
+            self._settings.sync()
+        syntaxerror_channel_migrated = self._settings.value(
+            "updates/syntaxerror_channel_migrated", False
+        )
+        if str(syntaxerror_channel_migrated).lower() not in {
+            "1", "true", "yes", "on"
+        }:
+            old_manifest = (
+                "https://raw.githubusercontent.com/lucaswang9/"
+                "Zyvro-Updates/main/manifest.json"
+            )
+            old_public_key = "huv5gOQoUMj1bOlpIj54R2UlbcakheksLlYDEsL96no="
+            current_manifest = str(
+                self._settings.value("updates/manifest_url", "")
+            ).strip()
+            current_public_key = str(
+                self._settings.value("updates/ed25519_public_key", "")
+            ).strip()
+            if not current_manifest or current_manifest == old_manifest:
+                self._settings.setValue(
+                    "updates/manifest_url", self.DEFAULTS["updates/manifest_url"]
+                )
+            if not current_public_key or current_public_key == old_public_key:
+                self._settings.setValue(
+                    "updates/ed25519_public_key",
+                    self.DEFAULTS["updates/ed25519_public_key"],
+                )
+            self._settings.setValue(
+                "updates/syntaxerror_channel_migrated", True
+            )
             self._settings.sync()
 
     def value(self, key: str):
