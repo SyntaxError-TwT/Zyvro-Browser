@@ -704,6 +704,43 @@ class IncognitoIntegrationTests(unittest.TestCase):
         finally:
             manager.rust_engine.cosmetic_resources = original_resources
 
+    def test_youtube_installs_preplay_adblock_scriptlets(self) -> None:
+        manager = self.manager.adblock_manager
+        normal = self._window(False)
+        page = normal.current_browser().page()
+        original_resources = manager.rust_engine.cosmetic_resources
+        original_supplemental = manager.rust_engine.supplemental_scriptlets
+        manager.rust_engine.cosmetic_resources = lambda _url: {
+            "hide_selectors": [".video-ads"],
+            "exceptions": [],
+            "injected_script": "",
+        }
+
+        manager.rust_engine.supplemental_scriptlets = lambda _host: (
+            "/* block YouTube player ad payloads */",
+            "/* isolated YouTube protection */",
+        )
+        try:
+            manager.prepare_page(
+                page, QUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+            )
+            installed = {
+                script.name(): script.sourceCode()
+                for script in page.scripts().toList()
+            }
+            self.assertIn(manager.PAGE_SCRIPT_NAME, installed)
+            self.assertIn(".video-ads", installed[manager.PAGE_SCRIPT_NAME])
+            self.assertIn(
+                "block YouTube player ad payloads",
+                installed[manager.PAGE_SCRIPT_NAME],
+            )
+            self.assertNotIn(manager.ISOLATED_SCRIPT_NAME, installed)
+            cosmetic = manager._cosmetic_source("test", [])
+            self.assertIn("youtube-nocookie.com", cosmetic)
+        finally:
+            manager.rust_engine.cosmetic_resources = original_resources
+            manager.rust_engine.supplemental_scriptlets = original_supplemental
+
     def test_real_tor_custom_proxy_kill_switch_and_vpn_ui(self) -> None:
         vpn = self.manager.vpn_proxy_manager
         tor_port, stop_tor = self._proxy_server("socks5")

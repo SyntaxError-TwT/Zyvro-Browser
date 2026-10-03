@@ -5,11 +5,11 @@ VSVersionInfo(
   kids=[StringFileInfo([StringTable('040904B0', [
     StringStruct('CompanyName', 'Zyvro'),
     StringStruct('FileDescription', 'Zyvro Browser'),
-    StringStruct('FileVersion', '1.0.0.0'),
+    StringStruct('FileVersion', '1.0.1.0'),
     StringStruct('InternalName', 'Zyvro'),
     StringStruct('LegalCopyright', 'Copyright (c) Zyvro'),
     StringStruct('OriginalFilename', 'Zyvro.exe'),
     StringStruct('ProductName', 'Zyvro'),
-    StringStruct('ProductVersion', '1.0.0')
+    StringStruct('ProductVersion', '1.0.1')
   ])]), VarFileInfo([VarStruct('Translation', [1033, 1200])])]
 )

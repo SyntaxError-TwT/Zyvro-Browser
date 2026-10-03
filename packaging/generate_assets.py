@@ -161,7 +161,7 @@ VSVersionInfo(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", default="1.0.0")
+    parser.add_argument("--version", default="1.0.1")
     args = parser.parse_args()
     if (not SOURCE_LOGO.is_file() or not SOURCE_BACKGROUND.is_file()
             or not INSTALLER_SIDEBAR_SOURCE.is_file()):

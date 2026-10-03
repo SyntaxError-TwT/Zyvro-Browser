@@ -339,9 +339,18 @@ class AdBlockManager(QObject):
             if value
         )
         native_scriptlets = str(resources.get("injected_script") or "")
+        # YouTube serves video ads from its own infrastructure, so URL-level
+        # blocking alone is insufficient. Run the bundled uBlock scriptlets at
+        # document creation to prevent ad payloads from reaching the player.
         youtube_main, youtube_isolated = self.rust_engine.supplemental_scriptlets(
             host
         )
+        # The isolated-world companion script interferes with YouTube's live
+        # player in QtWebEngine. The main-world rules contain the playerAds,
+        # adPlacements, and adSlots protections that prevent ads from being
+        # selected, so keep those and omit only the incompatible live layer.
+        if self._is_youtube_host(host):
+            youtube_isolated = ""
         scriptlets = "\n".join(
             value for value in (native_scriptlets, youtube_main) if value
         )
@@ -424,6 +433,7 @@ class AdBlockManager(QObject):
             not self.rust_engine.available
             or not host
             or not self.site_enabled(host)
+            or self._is_youtube_host(host)
         ):
             return
         expected_url = url.toString()
@@ -474,6 +484,18 @@ class AdBlockManager(QObject):
         page.runJavaScript(collector, apply)
 
     @staticmethod
+    def _is_youtube_host(host: str) -> bool:
+        host = str(host).lower().strip(".")
+        return any(
+            host == site or host.endswith(f".{site}")
+            for site in (
+                "youtube.com",
+                "youtube-nocookie.com",
+                "youtubekids.com",
+            )
+        )
+
+    @staticmethod
     def _cosmetic_source(token: str, allowed_sites: list[str]) -> str:
         allowed_json = json.dumps(allowed_sites)
         prefix = f"__PY_BROWSER_ADBLOCK__{token}:"
@@ -482,6 +504,8 @@ class AdBlockManager(QObject):
   const host = location.hostname.toLowerCase();
   const allowed = {allowed_json};
   if (allowed.some(site => host === site || host.endsWith('.' + site))) return;
+  const youtubeHosts = ['youtube.com', 'youtube-nocookie.com', 'youtubekids.com'];
+  if (youtubeHosts.some(site => host === site || host.endsWith('.' + site))) return;
   const selectors = [
     '.adsbygoogle', '[data-ad-client]', '[data-ad-slot]',
     '[id^="google_ads_"]', '[id^="div-gpt-ad-"]',
