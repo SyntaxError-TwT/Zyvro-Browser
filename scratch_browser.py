@@ -2152,6 +2152,9 @@ class BrowserWindow(QMainWindow):
 
     def _create_shortcuts(self) -> None:
         self._shortcuts: list[QShortcut] = []
+        self._fullscreen_escape = QShortcut(QKeySequence("Esc"), self)
+        self._fullscreen_escape.setEnabled(False)
+        self._fullscreen_escape.activated.connect(self._exit_page_full_screen)
         if self.web_app_mode:
             self._add_shortcut("F12", self.toggle_devtools)
             self._add_shortcut("Ctrl+Shift+I", self.toggle_devtools)
@@ -3184,6 +3187,7 @@ class BrowserWindow(QMainWindow):
             self.tabs.tabBar().hide()
             self.navigation_bar.hide()
             self.bookmarks_bar.hide()
+            self._fullscreen_escape.setEnabled(True)
             request.accept()
             self.showFullScreen()
             browser.setFocus()
@@ -3192,10 +3196,16 @@ class BrowserWindow(QMainWindow):
         request.accept()
         self._leave_full_screen()
 
+    def _exit_page_full_screen(self) -> None:
+        browser = self._fullscreen_browser
+        if browser is not None:
+            browser.page().triggerAction(QWebEnginePage.WebAction.ExitFullScreen)
+
     def _leave_full_screen(self) -> None:
         if self._fullscreen_browser is None and not self.isFullScreen():
             return
         self._fullscreen_browser = None
+        self._fullscreen_escape.setEnabled(False)
         self.tabs.tabBar().show()
         self.navigation_bar.setVisible(self._fullscreen_navigation_visible)
         self.bookmarks_bar.setVisible(self._fullscreen_bookmarks_visible)

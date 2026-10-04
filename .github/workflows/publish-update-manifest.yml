@@ -12,6 +12,10 @@ on:
       notes:
         description: Short update notes shown in Zyvro
         required: true
+      verify_only:
+        description: Verify signing readiness without publishing or committing a manifest
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -50,7 +54,32 @@ jobs:
             --notes "$RELEASE_NOTES" \
             --output updates/manifest.json
 
+      - name: Verify manifest before publication
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, os, re
+          from pathlib import Path
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+          data = json.loads(Path('updates/manifest.json').read_text())
+          signature = base64.b64decode(data.pop('signature'), validate=True)
+          match = re.search(r'"updates/ed25519_public_key":\s*\(\s*"([^"]+)"', Path('browser_data.py').read_text())
+          if not match:
+              raise SystemExit('Embedded update public key was not found.')
+          public = Ed25519PublicKey.from_public_bytes(base64.b64decode(match[1], validate=True))
+          canonical = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()
+          public.verify(signature, canonical)
+          if os.environ['RELEASE_TAG'] != 'v' + os.environ['RELEASE_VERSION']:
+              raise SystemExit('The release tag must match the manifest version.')
+          if data['sha256'] != hashlib.file_digest(Path('ZyvroSetup.exe').open('rb'), 'sha256').hexdigest():
+              raise SystemExit('Installer digest mismatch.')
+          print('Manifest signature, version, and installer digest verified.')
+          PY
+
       - name: Commit manifest
+        if: ${{ !inputs.verify_only }}
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
