@@ -1,6 +1,6 @@
 #define MyAppName "Zyvro"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.2.0"
+  #define MyAppVersion "1.0.2"
 #endif
 #define MyAppPublisher "Zyvro"
 #define MyAppExeName "Zyvro.exe"

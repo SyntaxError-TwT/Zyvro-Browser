@@ -13,7 +13,7 @@ import uuid
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu")
 
-from qtpy.QtCore import QEventLoop, QStandardPaths, Qt, QTimer, QUrl
+from qtpy.QtCore import QEventLoop, QPoint, QStandardPaths, Qt, QTimer, QUrl
 from qtpy.QtTest import QTest
 from qtpy.QtWidgets import QApplication
 from qtpy.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings
@@ -158,6 +158,39 @@ class IncognitoIntegrationTests(unittest.TestCase):
         window._full_screen_requested(browser, leave)
         self.assertTrue(leave.accepted)
         self.assertIsNone(window._fullscreen_browser)
+
+    def test_escape_exits_real_html_fullscreen_and_restores_chrome(self) -> None:
+        for private in (False, True):
+            with self.subTest(private=private):
+                window = self._window(private)
+                window.show()
+                self.app.setActiveWindow(window)
+                browser = window.current_browser()
+                browser.setHtml(
+                    '<button style="width:200px;height:100px" '
+                    'onclick="document.documentElement.requestFullscreen()">'
+                    'Fullscreen</button>',
+                    QUrl("https://example.com/"),
+                )
+                self._wait(500)
+                browser.setFocus()
+                self.assertFalse(window._fullscreen_escape.isEnabled())
+                QTest.mouseClick(
+                    browser.focusProxy(), Qt.MouseButton.LeftButton,
+                    Qt.KeyboardModifier.NoModifier,
+                    QPoint(100, 50),
+                )
+                self._wait(500)
+                self.assertTrue(self._javascript(browser, "!!document.fullscreenElement"))
+                self.assertTrue(window.isFullScreen())
+                self.assertFalse(window.navigation_bar.isVisible())
+                QTest.keyClick(browser.focusProxy(), Qt.Key.Key_Escape)
+                self._wait(500)
+                self.assertFalse(self._javascript(browser, "!!document.fullscreenElement"))
+                self.assertFalse(window.isFullScreen())
+                self.assertTrue(window.navigation_bar.isVisible())
+                self.assertTrue(window.tabs.tabBar().isVisible())
+                self.assertFalse(window._fullscreen_escape.isEnabled())
 
     def test_automatic_update_check_obeys_two_day_interval(self) -> None:
         window = self._window(False)
