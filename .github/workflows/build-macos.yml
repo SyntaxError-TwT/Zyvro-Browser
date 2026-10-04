@@ -30,6 +30,17 @@ jobs:
       - name: Build unsigned test DMG
         run: bash build-macos.sh
 
+      - name: Verify frozen application and disk image
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu
+        run: |
+          dist/Zyvro.app/Contents/MacOS/Zyvro --smoke-test
+          for dmg in dist/*.dmg; do
+            hdiutil verify "$dmg"
+            shasum -a 256 "$dmg"
+          done
+
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
