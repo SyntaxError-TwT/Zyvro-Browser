@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "download_url": "https://github.com/SyntaxError-TwT/Zyvro-Browser/releases/download/Models/ZyvroSetup.exe",
-  "notes": "Zyvro Browser v1.0.0 Stable: refreshed Windows installer and portable package, improved signed update delivery.",
-  "sha256": "2f97ba192e73e8d98656793918a38d29f9b12fcc1d7439a62aa6ce507b5c2c37",
-  "signature": "xlXQkk9Jex8SkbfmnK1VuIDh6klUknfUXSe4BtS8igEl00LpWg47azrIs0j1Zk1NO5u7qvmO0GaxUuphiJxGAA=="
+  "version": "1.0.2",
+  "download_url": "https://github.com/SyntaxError-TwT/Zyvro-Browser/releases/download/v1.0.2/ZyvroSetup.exe",
+  "notes": "Zyvro Browser v1.0.2 Stable: Escape exits page fullscreen and restores browser controls. Includes a complete Windows portable ZIP and verified native macOS DMG.",
+  "sha256": "dd11747a96222143ab4274b4a5603fa4e26b2e1594f297a796fec8db716c1806",
+  "signature": "oUrsHyBPDEH3zCQjhnsei00CJDdlpRzrg5Id2u21FNdWw2SDJYH2AlMZD1U2yn4JZAqgmBtUHGr+nFraY9BwAQ=="
 }
